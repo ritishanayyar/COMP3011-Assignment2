@@ -4,7 +4,7 @@
  * 
  * Authors:
  *   1. Simon Ratcliffe, in collaboration with GPT-5.6 Terra
- *   2. <student name and student number insert here upon modification>
+ *   2. Ritisha Nayyar, a1948388
  *
  * Copyright 2026 Simon Ratcliffe
  */
@@ -33,21 +33,18 @@ public class FrameScratcher extends FrameProcessor {
     private static final double THICK_SCRATCH_PROBABILITY = 0.15;
     private static final int SCRATCH_MAX_TRAVEL = 32;
 
-    private static int nextInstanceIndex;
 
-    private final int instanceIndex;
     private final List<Scratch> scratches = new ArrayList<>();
     private int mediaSeed;
 
     public FrameScratcher() {
         super();
-        instanceIndex = nextInstanceIndex++;
     }
 
     @Override
     public void initialise(InfoVideo videoInfo) throws Exception {
         super.initialise(videoInfo);
-        mediaSeed = saltedMediaSeed(videoInfo.mediaName(), instanceIndex);
+        mediaSeed = saltedMediaSeed(videoInfo.mediaName(), instanceIndex());
         generateScratches();
     }
 

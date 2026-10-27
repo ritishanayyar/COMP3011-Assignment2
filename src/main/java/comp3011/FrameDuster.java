@@ -4,7 +4,7 @@
  * 
  * Authors:
  *   1. Simon Ratcliffe, in collaboration with GPT-5.6 Terra
- *   2. <student name and student number insert here upon modification>
+ *   2. Ritisha Nayyar, a1948388
  *
  * Copyright 2026 Simon Ratcliffe
  */
@@ -37,20 +37,17 @@ public class FrameDuster extends FrameProcessor {
     private static final double UNIFORM_ANGLE_PROBABILITY = 0.18;
     private static final int SEED_SALT = 0x44555354;
 
-    private static int nextInstanceIndex;
 
-    private final int instanceIndex;
     private int mediaSeed;
 
     public FrameDuster() {
         super();
-        instanceIndex = nextInstanceIndex++;
     }
 
     @Override
     public void initialise(InfoVideo videoInfo) throws Exception {
         super.initialise(videoInfo);
-        mediaSeed = saltedMediaSeed(videoInfo.mediaName(), instanceIndex + SEED_SALT);
+        mediaSeed = saltedMediaSeed(videoInfo.mediaName(), instanceIndex() + SEED_SALT);
     }
 
     @Override

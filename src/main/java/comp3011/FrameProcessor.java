@@ -4,7 +4,7 @@
  * 
  * Authors:
  *   1. Simon Ratcliffe, in collaboration with GPT-5.6 Terra
- *   2. <student name and student number insert here upon modification>
+ *   2. Ritisha Nayyar, a1948388
  *
  * Copyright 2026 Simon Ratcliffe
  */
@@ -55,4 +55,11 @@ public abstract class FrameProcessor {
     }
 
     public abstract void process(Frame frame, InfoFrame info) throws Exception;
+    private int instanceIndex;
+public void setInstanceIndex(int instanceIndex){
+    this.instanceIndex = instanceIndex;
+    }
+    protected int instanceIndex(){
+return instanceIndex;
+    }
 }

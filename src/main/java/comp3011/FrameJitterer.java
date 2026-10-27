@@ -4,7 +4,7 @@
  * 
  * Authors:
  *   1. Simon Ratcliffe, in collaboration with GPT-5.6 Terra
- *   2. <student name and student number insert here upon modification>
+ *   2. Ritisha Nayyar, a1948388
  *
  * Copyright 2026 Simon Ratcliffe
  */
@@ -29,22 +29,19 @@ import org.bytedeco.javacv.Frame;
 public class FrameJitterer extends FrameProcessor {
     private static final int SEED_SALT = 0x4a495454;
 
-    private static int nextInstanceIndex;
 
-    private final int instanceIndex;
     private int mediaSeed;
     private byte[] sourcePixels;
     private byte[] blackRow;
 
     public FrameJitterer() {
         super();
-        instanceIndex = nextInstanceIndex++;
     }
 
     @Override
     public void initialise(InfoVideo videoInfo) throws Exception {
         super.initialise(videoInfo);
-        mediaSeed = saltedMediaSeed(videoInfo.mediaName(), instanceIndex + SEED_SALT);
+        mediaSeed = saltedMediaSeed(videoInfo.mediaName(), instanceIndex() + SEED_SALT);
 
         int frameBytes = videoInfo.imageStride() * videoInfo.imageHeight();
         int widthBytes = videoInfo.imageWidth() * videoInfo.imageChannels();

@@ -4,7 +4,7 @@
  * 
  * Authors:
  *   1. Simon Ratcliffe, in collaboration with GPT-5.6 Terra
- *   2. <student name and student number insert here upon modification>
+ *   2. Ritisha Nayyar, a1948388
  *
  * Copyright 2026 Simon Ratcliffe
  */
@@ -41,20 +41,17 @@ public class FramePepperer extends FrameProcessor {
     private static final double MAX_BOUNDARY_WARP = 0.22;
     private static final int SEED_SALT = 0x50455050;
 
-    private static int nextInstanceIndex;
 
-    private final int instanceIndex;
     private int mediaSeed;
 
     public FramePepperer() {
         super();
-        instanceIndex = nextInstanceIndex++;
     }
 
     @Override
     public void initialise(InfoVideo videoInfo) throws Exception {
         super.initialise(videoInfo);
-        mediaSeed = saltedMediaSeed(videoInfo.mediaName(), instanceIndex + SEED_SALT);
+        mediaSeed = saltedMediaSeed(videoInfo.mediaName(), instanceIndex() + SEED_SALT);
     }
 
     @Override

@@ -4,7 +4,7 @@
  * 
  * Authors:
  *   1. Simon Ratcliffe, in collaboration with GPT-5.6 Terra
- *   2. <student name and student number insert here upon modification>
+ *   2. <Ritisha Nayyar,a1948388>
  *
  * Copyright 2026 Simon Ratcliffe
  */
@@ -91,6 +91,7 @@ public class VideoPlayerModel {
 
     public VideoPlayerModel(
             boolean audioEnabled,
+            List<String> frameEffects,
             BiConsumer<Integer, Integer> videoSizeChangedHandler,
             Consumer<Image> frameReadyHandler,
             Consumer<String> statusChangedHandler,
@@ -103,6 +104,30 @@ public class VideoPlayerModel {
         this.playbackStateChangedHandler = playbackStateChangedHandler;
         this.audioOutputStateChangedHandler = audioOutputStateChangedHandler;
         this.frameProcessors = new ArrayList<>();
+        for (int i = 0; i < frameEffects.size(); i++) {
+    String effect = frameEffects.get(i);
+    FrameProcessor processor = null;
+    System.out.println("Requested frame effect:" + effect);
+
+    switch (effect) {
+        case "n"->processor =new FrameNumberer();
+        case "s"->processor = new FrameScratcher();
+        case "f"->processor = new FrameFlickerer();
+        case "w"->processor = new FrameBlackAndWhiter();
+        case "y"->processor = new FrameYellower();
+        case "v"->processor = new FrameVignetter();
+        case "d"->processor = new FrameDuster();
+        case "j"->processor = new FrameJitterer();
+        case "m"->processor = new FrameMottler();
+        case "b"->processor = new FrameBleeder();
+        case "p"->processor = new FramePepperer();
+    }
+
+    if (processor != null) {
+        processor.setInstanceIndex(i);
+        frameProcessors.add(processor);
+    }
+}
 //        frameProcessors.add(new FrameBleeder());
 //        frameProcessors.add(new FrameScratcher());
 //        frameProcessors.add(new FrameDuster());

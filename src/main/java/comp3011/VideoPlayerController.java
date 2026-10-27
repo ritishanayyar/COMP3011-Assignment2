@@ -4,7 +4,7 @@
  * 
  * Authors:
  *   1. Simon Ratcliffe, in collaboration with GPT-5.6 Terra
- *   2. <student name and student number insert here upon modification>
+ *   2. <Ritisha Nayyar, a1948388)>
  *
  * Copyright 2026 Simon Ratcliffe
  */
@@ -12,7 +12,7 @@ package comp3011;
 
 import java.io.File;
 import java.util.function.BiConsumer;
-
+import java.util.List;
 import javafx.scene.Scene;
 import javafx.scene.image.Image;
 import javafx.scene.input.KeyCode;
@@ -33,11 +33,12 @@ public class VideoPlayerController {
 
     public VideoPlayerController(
             boolean audioEnabled,
-            BiConsumer<Integer, Integer> videoSizeChangedHandler) {
+            BiConsumer<Integer, Integer> videoSizeChangedHandler, List<String> frameEffects) {
         this.view = new VideoPlayerView();
         this.videoSizeChangedHandler = videoSizeChangedHandler;
         model = new VideoPlayerModel(
                 audioEnabled,
+                frameEffects,
                 this::onVideoSizeChanged,
                 this::onFrameReady,
                 this::onStatusChanged,

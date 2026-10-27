@@ -32,6 +32,7 @@ public class CommandLineController {
     private Integer displayId;
     private File videoFile;
     private String errorMessage;
+    private final List<String> frameEffects = new ArrayList<>();
 
     public CommandLineController(String[] args) {
         this.args = args.clone();
@@ -43,6 +44,9 @@ public class CommandLineController {
             printHelp();
         }
     }
+    public List<String> getFrameEffects() {
+    return new ArrayList<>(frameEffects);
+}
 
     public File getVideoFile() {
         return videoFile;
@@ -73,39 +77,82 @@ public class CommandLineController {
     }
 
     private void parse() {
-        List<String> videoFiles = new ArrayList<>();
-        for (String arg : args) {
-            if ("-h".equals(arg) || "--help".equals(arg)) {
-                helpRequested = true;
-            } else if ("-a".equals(arg) || "--audio".equals(arg)) {
-                audioRequested = true;
-            } else if ("-x".equals(arg) || "--maximise".equals(arg)) {
-                maximiseRequested = true;
-            } else if ("-1".equals(arg) || "--monitor-1".equals(arg)) {
-                setDisplayId(1);
-            } else if ("-2".equals(arg) || "--monitor-2".equals(arg)) {
-                setDisplayId(2);
-            } else if (arg.startsWith("-")) {
-                errorMessage = "Unknown option: " + arg;
-            } else {
-                videoFiles.add(arg);
-            }
-        }
+    List<String> videoFiles = new ArrayList<>();
 
-        if (videoFiles.size() > 1) {
-            errorMessage = "Usage: VideoPlayer [options] [video-file]";
-        } else if (videoFiles.size() == 1) {
-            videoFile = new File(videoFiles.get(0));
-            if (!videoFile.isFile()) {
-                errorMessage = "File not found: " + videoFile.getPath();
-                videoFile = null;
+    for (String arg : args) {
+        if ("-h".equals(arg) || "--help".equals(arg)) {
+            helpRequested = true;
+        } else if ("-a".equals(arg) || "--audio".equals(arg)) {
+            audioRequested = true;
+        } else if ("-x".equals(arg) || "--maximise".equals(arg)) {
+            maximiseRequested = true;
+        } else if ("-1".equals(arg) || "--monitor-1".equals(arg)) {
+            setDisplayId(1);
+        } else if ("-2".equals(arg) || "--monitor-2".equals(arg)) {
+            setDisplayId(2);
+        } else if (arg.startsWith("--")) {
+            addLongEffect(arg);
+        } else if (arg.startsWith("-") && arg.length() > 1) {
+            for (int i = 1; i < arg.length(); i++) {
+                char option = arg.charAt(i);
+
+                switch (option) {
+                    case 'n' -> frameEffects.add("n");
+                    case 's' -> frameEffects.add("s");
+                    case 'f' -> frameEffects.add("f");
+                    case 'w' -> frameEffects.add("w");
+                    case 'y' -> frameEffects.add("y");
+                    case 'v' -> frameEffects.add("v");
+                    case 'd' -> frameEffects.add("d");
+                    case 'j' -> frameEffects.add("j");
+                    case 'm' -> frameEffects.add("m");
+                    case 'b' -> frameEffects.add("b");
+                    case 'p' -> frameEffects.add("p");
+                    default -> errorMessage = "Unknown option: -" + option;
+                }
+
+                if (errorMessage != null) {
+                    break;
+                }
             }
         } else {
-            if (!helpRequested) {
-                errorMessage = "No video file specified.";
-            }
+            videoFiles.add(arg);
+        }
+
+        if (errorMessage != null) {
+            break;
         }
     }
+
+    if (videoFiles.size() > 1) {
+        errorMessage = "Usage: VideoPlayer [options] [video-file]";
+    } else if (videoFiles.size() == 1) {
+        videoFile = new File(videoFiles.get(0));
+        if (!videoFile.isFile()) {
+            errorMessage = "File not found: " + videoFile.getPath();
+            videoFile = null;
+        }
+    } else if (!helpRequested) {
+        errorMessage = "No video file specified.";
+    }
+}
+
+private void addLongEffect(String arg) {
+    switch (arg) {
+        case "--number-frames" -> frameEffects.add("n");
+        case "--scratch-frames" -> frameEffects.add("s");
+        case "--flicker-frames" -> frameEffects.add("f");
+        case "--black-and-white" -> frameEffects.add("w");
+        case "--yellow-frames" -> frameEffects.add("y");
+        case "--vignette-frames" -> frameEffects.add("v");
+        case "--dust-frames" -> frameEffects.add("d");
+        case "--jitter-frames" -> frameEffects.add("j");
+        case "--mottle-frames" -> frameEffects.add("m");
+        case "--bleed-frames" -> frameEffects.add("b");
+        case "--pepper-frames" -> frameEffects.add("p");
+        default -> errorMessage = "Unknown option: " + arg;
+    }
+}
 
     private void setDisplayId(int displayId) {
         if (this.displayId != null && this.displayId != displayId) {
@@ -116,13 +163,16 @@ public class CommandLineController {
     }
 
     private void printHelp() {
-        System.out.println("Usage: VideoPlayer [options] [video-file]");
-        System.out.println();
-        System.out.println("Options:");
-        System.out.println("  -h, --help         Show this help message");
-        System.out.println("  -a, --audio        Play audio");
-        System.out.println("  -x, --maximise     Open the player maximised");
-        System.out.println("  -1, --monitor-1    Open the player on display 1");
-        System.out.println("  -2, --monitor-2    Open the player on display 2");
+        System.out.println("  -n, --number-frames    Render frame number");
+        System.out.println("  -s, --scratch-frames   Add vertical scratches");
+        System.out.println("  -f, --flicker-frames   Randomly dim frames");
+        System.out.println("  -w, --black-and-white  Convert to black and white");
+        System.out.println("  -y, --yellow-frames    Warm the colours");
+        System.out.println("  -v, --vignette-frames  Darken the edges");
+        System.out.println("  -d, --dust-frames      Add dust and hair");
+        System.out.println("  -j, --jitter-frames    Displace frames");
+        System.out.println("  -m, --mottle-frames    Add cloudy mottling");
+        System.out.println("  -b, --bleed-frames     Add light bleed");
+        System.out.println("  -p, --pepper-frames    Add dark spots");
     }
 }

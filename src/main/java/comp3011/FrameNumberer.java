@@ -147,7 +147,7 @@ public class FrameNumberer extends FrameProcessor {
     }
 
     private void setPixel(ByteBuffer pixels, int x, int y, int value) {
-        int base = y * videoInfo.imageStride() + x * videoInfo.imageChannels();
+        int base = y* videoInfo.imageStride() + x * videoInfo.imageChannels();
         byte byteValue = (byte) value;
 
         for (int channel = 0; channel < videoInfo.imageChannels(); channel++) {

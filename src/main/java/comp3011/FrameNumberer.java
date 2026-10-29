@@ -4,7 +4,7 @@
  * 
  * Authors:
  *   1. Simon Ratcliffe, in collaboration with GPT-5.6 Terra
- *   2. <Ritisha Nayyar, a1948388>
+ *   2. <student name and student number insert here upon modification>
  *
  * Copyright 2026 Simon Ratcliffe
  */
@@ -27,10 +27,10 @@ import org.bytedeco.javacv.Frame;
  * </p>
  */
 public class FrameNumberer extends FrameProcessor {
-    private static final int TILE_WIDTH = 15;
-    private static final int TILE_HEIGHT = 21;
-    private static final int TILE_SPACING = 3;
-    private static final int MARGIN = 10;
+    private static final int TILE_WIDTH = 5;
+    private static final int TILE_HEIGHT = 7;
+    private static final int TILE_SPACING = 1;
+    private static final int MARGIN = 1;
 
     private static final int TOP = 1;
     private static final int UPPER_LEFT = 2;
@@ -99,34 +99,28 @@ public class FrameNumberer extends FrameProcessor {
         int segments = DIGIT_SEGMENTS[digit];
 
         if ((segments & TOP) != 0)
-            drawHorizontalSegment(pixels, tileX, tileY, 3);
+            drawHorizontalSegment(pixels, tileX, tileY, 1);
         if ((segments & UPPER_LEFT) != 0)
-            drawVerticalSegment(pixels, tileX, tileY, 3,3);
+            drawVerticalSegment(pixels, tileX, tileY, 1, 1);
         if ((segments & UPPER_RIGHT) != 0)
-            drawVerticalSegment(pixels, tileX, tileY, 9, 3);
+            drawVerticalSegment(pixels, tileX, tileY, 3, 1);
         if ((segments & MIDDLE) != 0)
-            drawHorizontalSegment(pixels, tileX, tileY, 10);
+            drawHorizontalSegment(pixels, tileX, tileY, 3);
         if ((segments & LOWER_LEFT) != 0)
-            drawVerticalSegment(pixels, tileX, tileY, 3, 10);
+            drawVerticalSegment(pixels, tileX, tileY, 1, 3);
         if ((segments & LOWER_RIGHT) != 0)
-            drawVerticalSegment(pixels, tileX, tileY, 9, 10);
+            drawVerticalSegment(pixels, tileX, tileY, 3, 3);
         if ((segments & BOTTOM) != 0)
-            drawHorizontalSegment(pixels, tileX, tileY, 17);
+            drawHorizontalSegment(pixels, tileX, tileY, 5);
     }
 
     private void drawHorizontalSegment(ByteBuffer pixels, int tileX, int tileY, int y) {
         setPixel(pixels, tileX + 1, tileY + y, 255);
-        for (int x = 3; x <=11; x++){
-            setPixel(pixels, tileX + x,tileY + y, 255);
-        }
         setPixel(pixels, tileX + 2, tileY + y, 255);
         setPixel(pixels, tileX + 3, tileY + y, 255);
     }
 
     private void drawVerticalSegment(ByteBuffer pixels, int tileX, int tileY, int x, int y) {
-        for (int row =y; row < y + 5; row++){
-            setPixel(pixels, tileX + x, tileY + row, 255); // making changes to the vertical segment, horizontal segment etc so that frame numbers are visible because of pixels
-        }
         setPixel(pixels, tileX + x, tileY + y, 255);
         setPixel(pixels, tileX + x, tileY + y + 1, 255);
         setPixel(pixels, tileX + x, tileY + y + 2, 255);
@@ -147,7 +141,7 @@ public class FrameNumberer extends FrameProcessor {
     }
 
     private void setPixel(ByteBuffer pixels, int x, int y, int value) {
-        int base = y* videoInfo.imageStride() + x * videoInfo.imageChannels();
+        int base = y * videoInfo.imageStride() + x * videoInfo.imageChannels();
         byte byteValue = (byte) value;
 
         for (int channel = 0; channel < videoInfo.imageChannels(); channel++) {

@@ -4,7 +4,7 @@
  * 
  * Authors:
  *   1. Simon Ratcliffe, in collaboration with GPT-5.6 Terra
- *   2. <Ritisha Nayyar, a1948388>
+ *   2. Ritisha Nayyar a1948388
  *
  * Copyright 2026 Simon Ratcliffe
  */
@@ -34,16 +34,20 @@ public class CommandLineController {
     private String errorMessage;
     private final List<String> frameEffects = new ArrayList<>();
 
-    public CommandLineController(String[] args) {
-        this.args = args.clone();
-        parse();
-        if (errorMessage != null) {
-            System.out.println(errorMessage);
-        }
-        if (helpRequested) {
-            printHelp();
-        }
+   public CommandLineController(String[] args) {
+    this.args = args.clone();
+
+    if (containsHelpOption()) {
+        helpRequested = true;
+    } else { parse();
     }
+    if (errorMessage != null) {
+        System.out.println(errorMessage);
+    }
+    if (helpRequested) {
+        printHelp();
+    }
+}
     public List<String> getFrameEffects() {
     return new ArrayList<>(frameEffects);
 }
@@ -75,14 +79,24 @@ public class CommandLineController {
     public boolean shouldLaunchApplication() {
         return errorMessage == null && videoFile != null;
     }
+    private boolean containsHelpOption() {
+    for (String arg : args) {
+        if ("-h".equals(arg) || "--help".equals(arg)) {
+            return true;
+        }
+        //stacked short options such as -nh
+        if (arg.startsWith("-") && !arg.startsWith("--") && arg.length() > 2 && arg.indexOf('h') > 0) {
+            return true;
+        }
+    }
+    return false;
+}
 
     private void parse() {
     List<String> videoFiles = new ArrayList<>();
 
     for (String arg : args) {
-        if ("-h".equals(arg) || "--help".equals(arg)) {
-            helpRequested = true;
-        } else if ("-a".equals(arg) || "--audio".equals(arg)) {
+        if ("-a".equals(arg) || "--audio".equals(arg)) {
             audioRequested = true;
         } else if ("-x".equals(arg) || "--maximise".equals(arg)) {
             maximiseRequested = true;
@@ -132,7 +146,7 @@ public class CommandLineController {
             errorMessage = "File not found: " + videoFile.getPath();
             videoFile = null;
         }
-    } else if (!helpRequested) {
+    } else{
         errorMessage = "No video file specified.";
     }
 }
@@ -161,7 +175,7 @@ private void addLongEffect(String arg) {
         }
         this.displayId = displayId;
     }
-
+    //Titn checks the entire text and therefore have to match it word to word (even blank lines) 
   
 private void printHelp() {
     System.out.println("Usage: VideoPlayer [options] [video-file]");

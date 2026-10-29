@@ -124,6 +124,12 @@ public class VideoPlayerModel {
     }
 
     if (processor != null) {
+        int sametypeCount=0;
+        for (FrameProcessor existing: frameProcessors){
+            if(existing.getClass()==processor.getClass()){
+                sametypeCount++;
+            }
+        }
         processor.setInstanceIndex(i);
         frameProcessors.add(processor);
     }

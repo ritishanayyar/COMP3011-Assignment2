@@ -137,7 +137,6 @@ public class CommandLineController {
             break;
         }
     }
-
     if (videoFiles.size() > 1) {
         errorMessage = "Usage: VideoPlayer [options] [video-file]";
     } else if (videoFiles.size() == 1) {

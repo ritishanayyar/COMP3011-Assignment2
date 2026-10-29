@@ -124,13 +124,13 @@ public class VideoPlayerModel {
     }
 
     if (processor != null) {
-        int sametypeCount=0;
+        int sametypeCount=0; //seed index= how many of this effect came before it, not its position in the list 
         for (FrameProcessor existing: frameProcessors){
             if(existing.getClass()==processor.getClass()){
                 sametypeCount++;
             }
         }
-        processor.setInstanceIndex(i);
+        processor.setInstanceIndex(sametypeCount);
         frameProcessors.add(processor);
     }
 }

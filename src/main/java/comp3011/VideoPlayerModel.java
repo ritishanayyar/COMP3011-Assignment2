@@ -103,48 +103,7 @@ public class VideoPlayerModel {
         this.statusChangedHandler = statusChangedHandler;
         this.playbackStateChangedHandler = playbackStateChangedHandler;
         this.audioOutputStateChangedHandler = audioOutputStateChangedHandler;
-        this.frameProcessors = new ArrayList<>();
-        for (int i = 0; i < frameEffects.size(); i++) {
-    String effect = frameEffects.get(i);
-    FrameProcessor processor = null;
-    System.out.println("Requested frame effect:" + effect);
-
-    switch (effect) {
-        case "n"->processor =new FrameNumberer();
-        case "s"->processor = new FrameScratcher();
-        case "f"->processor = new FrameFlickerer();
-        case "w"->processor = new FrameBlackAndWhiter();
-        case "y"->processor = new FrameYellower();
-        case "v"->processor = new FrameVignetter();
-        case "d"->processor = new FrameDuster();
-        case "j"->processor = new FrameJitterer();
-        case "m"->processor = new FrameMottler();
-        case "b"->processor = new FrameBleeder();
-        case "p"->processor = new FramePepperer();
-    }
-
-    if (processor != null) {
-        int sametypeCount=0; //seed index= how many of this effect came before it, not its position in the list 
-        for (FrameProcessor existing: frameProcessors){
-            if(existing.getClass()==processor.getClass()){
-                sametypeCount++;
-            }
-        }
-        processor.setInstanceIndex(sametypeCount);
-        frameProcessors.add(processor);
-    }
-}
-//        frameProcessors.add(new FrameBleeder());
-//        frameProcessors.add(new FrameScratcher());
-//        frameProcessors.add(new FrameDuster());
-//        frameProcessors.add(new FramePepperer());
-//        frameProcessors.add(new FrameBlackAndWhiter());
-//        frameProcessors.add(new FrameYellower());
-//        frameProcessors.add(new FrameVignetter());
-//        frameProcessors.add(new FrameFlickerer());
-//        frameProcessors.add(new FrameJitterer());
-//        frameProcessors.add(new FrameNumberer());
-    }
+        this.frameProcessors = FrameProcessorFactory.createChain(frameEffects);
 
     public void play(File file) {
         videoFile = file;

@@ -12,17 +12,17 @@ package comp3011;
 
 import java.io.File;
 import java.util.ArrayDeque;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Queue;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
-
 import org.bytedeco.javacv.FFmpegFrameGrabber;
 import org.bytedeco.javacv.Frame;
 import org.bytedeco.javacv.FrameGrabber;
 import org.bytedeco.javacv.JavaFXFrameConverter;
-
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import javafx.animation.AnimationTimer;
 import javafx.application.Platform;
 import javafx.scene.image.Image;
@@ -71,6 +71,12 @@ public class VideoPlayerModel {
     private JavaFXFrameConverter converter; // Takes Frame objects to JavaFX Image objects, which can be put on screen.
     private AudioPlayer audioPlayer; // This is ours. It has some real time buffering smarts.
     private PreparedFrame preparedFrame; // Ours, but is just an Image with some meta-data added.
+    private CompletableFuture<PreparedFrame> processingFuture;
+    private final ExecutorService frameExecutor = Executors.newSingleThreadExecutor(r -> {
+            Thread thread =new Thread(r,"video-frame-processor");
+            thread.setDaemon(true);
+            return thread;
+        });
     private boolean prepareNextFrameQueued; // True only when the event loop needs to call our prepareNextFrame method.
     private boolean playbackOpen; // True when playback is happening.
     private boolean pauseRequested;
@@ -170,8 +176,9 @@ public class VideoPlayerModel {
     }
 
     public void shutdown() {
-        closePlaybackResources();
-    }
+    closePlaybackResources();
+    frameExecutor.shutdownNow();
+}
 
     private void seekRelative(long offsetUs) {
         if (videoFile == null) {
@@ -262,6 +269,10 @@ public class VideoPlayerModel {
     private void resetPlaybackClock(long logicalTimestampUs) {
         pendingAudio.clear();
         preparedFrame = null;
+        if (processingFuture != null) {
+           processingFuture.cancel(true);
+           processingFuture = null;
+        }
         currentTimestampUs = logicalTimestampUs;
         relativeSeekBaseUs = logicalTimestampUs;
         firstTimestampUs = NO_SEEK_REQUEST;
@@ -277,17 +288,16 @@ public class VideoPlayerModel {
         pauseStartedNs = 0;
     }
 
-    private void prepareNextFrame() {
-        if (!playbackOpen || preparedFrame != null) {
-            return;
-        }
-
-        try {
-            preparedFrame = readNextVideoFrame();
-        } catch (Exception e) {
-            handlePlaybackError(e);
-        }
+   private void prepareNextFrame() {
+    if (!playbackOpen || preparedFrame != null || processingFuture != null) {
+        return;
     }
+    try {
+        readNextVideoFrame();
+    } catch (Exception e) {
+        handlePlaybackError(e);
+    }
+}
 
     private PreparedFrame readNextVideoFrame() throws Exception {
         while (playbackOpen) {
@@ -331,21 +341,30 @@ public class VideoPlayerModel {
             }
 
             int frameNumber = grabber.getFrameNumber();
-            InfoFrame info = new InfoFrame(frameNumber, timestampUs);
-            processFrame(frame, info);
+InfoFrame info = new InfoFrame(frameNumber, timestampUs);
 
-            Image image = converter.convert(frame);
-            long relativeTimestampUs = Math.max(0, timestampUs - firstTimestampUs);
-            long logicalTimestampUs = logicalPlaybackBaseUs + relativeTimestampUs;
-            long targetTimeNs = playbackStartNs + relativeTimestampUs * 1_000L;
+long relativeTimestampUs = Math.max(0, timestampUs - firstTimestampUs);
+long logicalTimestampUs = logicalPlaybackBaseUs + relativeTimestampUs;
+long targetTimeNs = playbackStartNs + relativeTimestampUs * 1_000L;
 
-            return new PreparedFrame(
-                    image,
-                    frameNumber,
-                    timestampUs,
-                    logicalTimestampUs,
-                    targetTimeNs,
-                    System.nanoTime());
+processingFuture = CompletableFuture.supplyAsync(() -> {
+    try {
+        processFrame(frame, info);
+        Image image = converter.convert(frame);
+        return new PreparedFrame(
+                image,
+                frameNumber,
+                timestampUs,
+                logicalTimestampUs,
+                targetTimeNs,
+                System.nanoTime());
+
+    } catch (Exception e) {
+        throw new RuntimeException(e);
+    }
+}, frameExecutor);
+
+return null;
         }
 
         return null;
@@ -366,6 +385,16 @@ public class VideoPlayerModel {
         writeDueAudio(now);
 
         // Task (2)
+        if (processingFuture != null && processingFuture.isDone()) {
+        try {
+        preparedFrame = processingFuture.join();
+        processingFuture = null;
+        } catch (Exception e) {
+        processingFuture = null;
+        handlePlaybackError(e);
+        return;
+        }
+      }
         if (preparedFrame != null && preparedFrame.targetTimeNs() <= now) {
             // We have a prepared frame ready to go and it is due (or just past due!) so get it up on screen ASAP!
             displayPreparedFrame(now);
@@ -478,7 +507,12 @@ public class VideoPlayerModel {
         playbackTimer.stop();
         playbackOpen = false;
         preparedFrame = null;
-        pendingAudio.clear();
+        if (processingFuture != null) {
+           processingFuture.cancel(true);
+           processingFuture = null;
+        }
+
+pendingAudio.clear();
         firstTimestampUs = NO_SEEK_REQUEST;
         playbackStartNs = 0;
         pauseStartedNs = 0;

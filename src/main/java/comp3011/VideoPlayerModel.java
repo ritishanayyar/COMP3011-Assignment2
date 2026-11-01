@@ -103,7 +103,7 @@ public class VideoPlayerModel {
         this.statusChangedHandler = statusChangedHandler;
         this.playbackStateChangedHandler = playbackStateChangedHandler;
         this.audioOutputStateChangedHandler = audioOutputStateChangedHandler;
-        this.frameProcessors = FrameProcessorFactory.createChain(frameEffects);
+        this.frameProcessors = FrameProcessorFactory.createChain(frameEffects); }
 
     public void play(File file) {
         videoFile = file;

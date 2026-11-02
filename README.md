@@ -55,7 +55,7 @@ Keyboard controls: Space pauses/resumes, Left/Right seeks 5 seconds, Home restar
 To add another effect:
 
 1. Create a class extending `FrameProcessor`.
-2. Add it to `FrameProcessorFactory.create()`.
+2. Add it to `FrameProcessorFactory.createChain()`.
 3. Add its command-line flag and help text.
 4. Add a test in `FrameProcessorFactoryTest`.
 
@@ -124,4 +124,4 @@ I also compared the original and multi-threaded implementations through performa
 The results are available in:
 
 - `docs/baseline.md` - Original single-threaded performance.
-- `docs/multithreaded-findings.md` - Multi-threaded performance and observations.
+- `docs/MultithreadFindings.md` - Multi-threaded performance and observations.

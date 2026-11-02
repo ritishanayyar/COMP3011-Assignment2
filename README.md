@@ -1,205 +1,127 @@
 For more information on this code and how to get started, see https://learn.adelaide.edu.au/courses/30747/assignments/94505
-# COMP3011 Assignment 2 – Video Player
+## COMP3011 Assignment 2 - Multi-threaded Video Player
 
-## Overview
-This project is a Java-based video player developed for Adelaide University's COMP3011 Assignment 2.
-The application uses FFmpeg through JavaCV to decode video files and JavaFX to display the video and provide playback controls. It also supports audio playback and a range of frame-processing effects that can be selected through command-line arguments.
+This project is a Java video player that uses FFmpeg (through JavaCV) to decode videos and JavaFX to display them. It also supports several old-film effects that can be selected and combined through command-line arguments.
+The original player processed everything on one thread. I changed this to a multi-threaded design where frames can be decoded and processed simultaneously, allowing more effects to be applied without slowing playback as much.
 
-The main focus of this assignment is to improve the original single threaded video player by introducing a multithreaded processing pipeline. This allows video frames to be decoded and processed concurrently, making better use of available CPU cores while maintaining smooth playback.
+## Building and running
 
-## Features
-- Play video files supported by FFmpeg.
-- Play and toggle audio output.
-- Pause and resume playback.
-- Seek forward and backwards by five seconds.
-- Restart or stop playback.
-- Apply multiple visual effects to video frames.
-- Select and combine effects through command-line arguments.
-- Open the player maximised or on a selected monitor.
-- Process video frames using multiple threads.
-- Maintain frame ordering during concurrent processing.
+Run all commands from the folder containing `pom.xml`.
 
-## Frame Processing Effects
+| Command | Purpose |
+| --- | --- |
+| `mvn validate` | Check project validity |
+| `mvn compile` | Compile the source code |
+| `mvn package` | Build the JAR |
+| `mvn verify` | Run unit tests |
+| `mvn javafx:run '-Djavafx.args=--help'` | Show available options |
+| `mvn javafx:run '-Djavafx.args=-nsfwyvdjmbp video.mp4'` | Run with effects |
 
-The player supports the following effects:
+Available options include `-a` for audio, `-x` to maximise the window and `-1` / `-2` to select a monitor.
 
-| Option | Effect | Description |
-|---|---|---|
-| `-n`, `--number-frames` | Frame Numberer | Displays the frame number on each frame. |
-| `-s`, `--scratch-frames` | Scratcher | Adds vertical film scratches. |
-| `-f`, `--flicker-frames` | Flickerer | Randomly dims frames. |
-| `-w`, `--black-and-white` | Black and White | Converts frames to greyscale. |
-| `-y`, `--yellow-frames` | Yellower | Applies a warmer colour temperature. |
-| `-v`, `--vignette-frames` | Vignette | Darkens the edges of frames. |
-| `-d`, `--dust-frames` | Duster | Adds dust and hair marks. |
-| `-j`, `--jitter-frames` | Jitterer | Randomly displaces frames by a few pixels. |
-| `-m`, `--mottle-frames` | Mottler | Adds cloudy emulsion mottling. |
-| `-b`, `--bleed-frames` | Bleeder | Adds light bleeding to frames. |
-| `-p`, `--pepper-frames` | Pepperer | Adds dark spots and blotches. |
+Effects can be combined, repeated and applied in command-line order. For example, `-jfddn` is equivalent to `-j -f -d -d -n`.
 
-Effects are applied in the order they appear in the command line. The same effect can also be used more than once.
+| Option | Effect |
+| --- | --- |
+| `-n` | Display frame numbers |
+| `-s` | Add film scratches |
+| `-f` | Add flickering |
+| `-w` | Black and white |
+| `-y` | Warmer colours |
+| `-v` | Darken frame edges |
+| `-d` | Add dust and hair marks |
+| `-j` | Random image displacement |
+| `-m` | Add film mottling |
+| `-b` | Light bleeding |
+| `-p` | Add dark spots |
 
-For example:
+Keyboard controls: Space pauses/resumes, Left/Right seeks 5 seconds, Home restarts, A toggles audio and Esc stops playback.
 
-```bash
-mvn javafx:run '-Djavafx.args=-s -f -d -n video.mp4'
+## Class overview
+
+| Class | Responsibility |
+| --- | --- |
+| `VideoPlayerApp`, `VideoPlayerAppLauncher` | Start JavaFX |
+| `CommandLineController` | Parse command-line arguments |
+| `FrameProcessorFactory` | Create effect processors |
+| `VideoPlayerController`, `VideoPlayerView` | Handle the GUI |
+| `VideoPlayerModel` | Manage playback, timing and audio |
+| `FramePipeline` | Manage decoding, worker threads and frame ordering |
+| `FrameProcessor` and `Frame*` | Implement individual effects |
+| `AudioPlayer`, `InfoVideo`, `InfoFrame` | Handle audio and video information |
+
+### Adding an effect
+
+To add another effect:
+
+1. Create a class extending `FrameProcessor`.
+2. Add it to `FrameProcessorFactory.create()`.
+3. Add its command-line flag and help text.
+4. Add a test in `FrameProcessorFactoryTest`.
+
+The threading code does not need to change because each worker creates its own effect chain.
+
+## Multi-threading design
+
+The processing is split into three parts:
+
+```text
+Decoder thread
+      |
+   workQueue
+      |
+Worker threads
+      |
+ finishedFrames
+      |
+ JavaFX thread
 ```
 
-This applies scratches,flicker,dust and frame numbering in that order.
+- **Decoder:** Reads video and audio from FFmpeg. Video frames are cloned and added to a work queue, while audio is placed in its own queue.
+- **Workers:** Each worker processes frames using its own effect chain and converts them into JavaFX images. The number of workers is based on CPU cores (`cores - 2`), with a minimum of two.
+- **JavaFX:** Handles the interface, playback clock, audio and displaying frames in the correct order using `AnimationTimer`.
 
-## Multithreaded Architecture
-
-The original player processed decoding, frame effects and playback through a single-threaded approach. This limited the amount of processing that could be completed before the next frame was due.
-The updated implementation uses a multithreaded pipeline to distribute the workload.
-
-
-**Decoder thread**
-
-Reads frames from the video using FFmpeg. It also collects audio data and submits video frames for processing.
-
-**Worker threads**
-
-Take decoded frames from the processing queue, apply the selected effects and prepare the processed images.
-
-**Processing queue**
-
-A blocking queue holds frames waiting to be processed by an available worker.
-
-**Frame permits**
-
-A semaphore limits the number of frames that can be in the pipeline at once. This prevents the decoder from continuously adding work faster than the workers can complete it.
-
-**Completed frames**
-
-Processed frames are stored with sequence numbers. The playback system uses these numbers to display frames in the correct order, even when workers finish at different times.
-
-**JavaFX playback thread**
-
-Handles the user interface and displays completed frames at the appropriate playback time.
-
-### Thread safety and synch
-
-Several mechanisms are used to coordinate the different threads:
-
-- Blocking queues allow workers to wait for available frames without continuously checking the queue.
-- Semaphores control how many frames can be processed or waiting at once.
-- Sequence numbers preserve the original order of video frames.
-- Pipeline generation tracking helps prevent errors from an old pipeline from affecting a newly started one.
-- Worker threads are interrupted and joined when the pipeline is stopped.
-
-These mechanisms help prevent frames from being displayed out of order and reduce the possibility of race conditions when playback is stopped or restarted.
-
-## Controls
-
-The player supports the following keyboard shortcuts:
-
-| Key | Action |
-|---|---|
-| `Space` | Pause or resume playback |
-| `Left Arrow` | Seek backwards five seconds |
-| `Right Arrow` | Seek forwards five seconds |
-| `Home` | Restart the video |
-| `A` | Toggle audio |
-| `Escape` | Stop playback and exit |
-
-The same playback actions are also available through the on-screen controls.
-
-## Requirements
-
-- Java Development Kit compatible with the version configured in `pom.xml`.
-- Apache Maven.
-- Internet connection for Maven to download dependencies on the first build.
-- A media file supported by FFmpeg.
-
-## Building and Running
-
-Run the following commands from the project directory containing `pom.xml`.
-
-### Validate the project
-
-```bash
-mvn validate
-```
-
-### Compile the source code
-
-```bash
-mvn compile
-```
-
-### Package the application
-
-```bash
-mvn package
-```
-
-### Display command-line help
-
-```bash
-mvn javafx:run '-Djavafx.args=--help'
-```
-
-### Run the player with a video
-
-```bash
-mvn javafx:run '-Djavafx.args=video.mp4'
-```
-
-### Run with audio enabled
-
-```bash
-mvn javafx:run '-Djavafx.args=--audio video.mp4'
-```
-
-### Run with multiple effects
-
-```bash
-mvn javafx:run '-Djavafx.args=-sfdj video.mp4'
-```
-
-### Open the player maximised
-
-```bash
-mvn javafx:run '-Djavafx.args=--maximise video.mp4'
-```
-
-The player also supports selecting a monitor:
-
-```bash
-mvn javafx:run '-Djavafx.args=--monitor-1 video.mp4'
-```
+Workers process different frames simultaneously, but effects within each frame are still applied in the order selected by the user.
 
 
-The project is organised into separate classes to keep the playback logic, user interface and frame-processing effects independent.
+Since multiple threads access shared resources, I used different approaches to avoid race conditions:
 
-| Class | Use |
-|---|---|
-| `VideoPlayerApp` | Starts the JavaFX application. |
-| `VideoPlayerController` | Connects user interactions to the video player model. |
-| `VideoPlayerView` | Builds and manages the graphical interface. |
-| `VideoPlayerModel` | Manages video playback, decoding, audio and frame processing. |
-| `CommandLineController` | Parses command-line arguments and playback options. |
-| `FrameProcessor` | Base class for the visual effects. |
-| `FrameProcessorFactory` | Creates the requested sequence of frame processors. |
-| `AudioPlayer` | Handles audio output. |
-| `InfoVideo` | Stores video metadata. |
-| `InfoFrame` | Stores information about an individual frame. |
+| Shared resource | Protection |
+| --- | --- |
+| `FFmpegFrameGrabber` | Only the decoder uses it during playback. The decoder is interrupted and joined before seeking or closing. |
+| `workQueue` | Bounded `ArrayBlockingQueue` |
+| Frames in progress | `Semaphore` limits the number of frames being processed. |
+| Effect objects | Each worker has its own effect chain (thread confinement). |
+| `finishedFrames` | `ConcurrentHashMap` stores completed frames by sequence number. |
+| `pendingAudio` | `ConcurrentLinkedQueue` |
+| Shared flags and counters | `volatile` ensures changes are visible between threads. |
+| Playback clock and seek fields | Only accessed by the JavaFX thread. |
 
-Individual frame effects are implemented in their own classes, allowing them to be added or modified without changing the main playback logic.
+## Important design decisions
 
-## Performance and Testing
+- **Frame ordering:** Each frame has a sequence number. The JavaFX thread only displays the next expected frame, even if other workers finish earlier.
+- **Independent processing:** Frames are cloned and each worker has its own effects, avoiding shared-state problems.
+- **Stopping threads:** Blocking operations are interruptible. The pipeline interrupts and joins its threads when stopping.
+- **Safe seeking:** The decoder is stopped before the grabber is repositioned or closed.
+- **Old errors:** A generation counter prevents errors from previous pipeline runs affecting a new run.
+- **Playback timing:** Frames are displayed according to their timestamps. If processing falls behind, the playback clock moves forward by the lateness.
 
-The multithreaded implementation is intended to improve playback performance when several frame-processing effects are applied.
+## Trade-offs
 
-Performance should be assessed by comparing the modified player with the supplied single-threaded implementation using the same video and effects.
+- Each worker has its own effect chain, which uses more memory, especially for effects that create large masks or tables.
+- The number of frames in progress is limited to `3 x workers` to control memory usage and latency.
+- Two CPU cores are left available for JavaFX, decoding and audio rather than creating as many workers as possible.
 
-Useful observations include:
+## Testing and results
 
-- Whether frames are prepared before their scheduled display time.
-- How many effects can be applied before playback starts falling behind.
-- Whether audio remains continuous during playback.
-- Whether the interface remains responsive while effects are being processed.
-- Whether seeking, pausing and restarting work correctly while processing is underway.
+I used `mvn verify` to run the JUnit tests.
 
-Performance results should be recorded from actual tests rather than assumed, as they can vary depending on the hardware and system load.
+- `CommandLineControllerTest` checks argument parsing, combined flags, repeated effects and ordering.
+- `FrameProcessorFactoryTest` checks effect creation, ordering and whether each factory call returns new objects.
 
+I also compared the original and multi-threaded implementations through performance measurements and manual testing.
+
+The results are available in:
+
+- `docs/baseline.md` - Original single-threaded performance.
+- `docs/multithreaded-findings.md` - Multi-threaded performance and observations.
